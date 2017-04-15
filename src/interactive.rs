@@ -20,7 +20,7 @@ pub fn run(mut interpreter: Interpreter) {
     stdout.flush().unwrap();
 
     loop {
-        let mut result = run_line(&interpreter);
+        let result = run_line(&interpreter);
         match result {
             Some(new_interpreter) => {
                 interpreter = new_interpreter;
@@ -30,7 +30,7 @@ pub fn run(mut interpreter: Interpreter) {
     }
 }
 
-fn run_line(mut interpreter: &Interpreter) -> Option<Interpreter> {
+fn run_line(interpreter: &Interpreter) -> Option<Interpreter> {
     let stdin = stdin();
     let mut stdout = stdout().into_raw_mode().unwrap();
 
@@ -39,11 +39,11 @@ fn run_line(mut interpreter: &Interpreter) -> Option<Interpreter> {
     for c in stdin.keys() {
         match c.unwrap() {
             Key::Ctrl('c') => {
-                write!(stdout, "{}\n", termion::cursor::Down(1));
+                write!(stdout, "{}{}", termion::cursor::Down(1), termion::cursor::Right(<u16>::max_value())).unwrap();
                 return None
             },
             Key::Ctrl('d') => {
-                write!(stdout, "{}\n", termion::cursor::Down(1));
+                write!(stdout, "{}{}", termion::cursor::Down(1), termion::cursor::Right(<u16>::max_value())).unwrap();
                 return None
             },
             // TODO Key::Ctrl('a') => ,
@@ -58,7 +58,7 @@ fn run_line(mut interpreter: &Interpreter) -> Option<Interpreter> {
                 write!(stdout, "{}{}",
                        termion::cursor::Up(1),
                        termion::clear::CurrentLine,
-                );
+                ).unwrap();
                 write_output_line(&mut stdout, result);
                 write_prompt_line(&mut stdout, &line_str, cursor_pos);
                 stdout.flush().unwrap();
@@ -67,7 +67,7 @@ fn run_line(mut interpreter: &Interpreter) -> Option<Interpreter> {
                     termion::cursor::Down(2),
                     termion::cursor::Up(1),
                     termion::cursor::Left(<u16>::max_value()),
-                );
+                ).unwrap();
                 stdout.flush().unwrap();
 
                 write_stack_line(&mut stdout, &tmp_interpreter.stack_display());
@@ -134,12 +134,12 @@ fn write_stack_line<W: Write>(stdout: &mut termion::raw::RawTerminal<W>, line: &
         termion::cursor::Up(1),
         termion::clear::CurrentLine,
         termion::cursor::Left(<u16>::max_value()),
-        termion::color::Yellow,
+        termion::color::Fg(termion::color::Yellow),
         line,
-        termion::color::Yellow,
+        termion::style::Reset,
         termion::cursor::Down(1),
         termion::cursor::Left(<u16>::max_value()),
-    );
+    ).unwrap();
     stdout.flush().unwrap();
 }
 
@@ -149,14 +149,27 @@ fn write_output_line<W: Write>(stdout: &mut termion::raw::RawTerminal<W>, result
         Err(e) => (true, e),
     };
     // TODO color based on error
-    write!(stdout, "{}{}{}Output: {}{}{}",
-           termion::cursor::Down(1),
-           termion::clear::CurrentLine,
-           termion::cursor::Left(<u16>::max_value()),
-           line,
-           termion::cursor::Up(1),
-           termion::cursor::Left(<u16>::max_value()),
-    );
+    if error {
+        write!(stdout, "{}{}{}Output: {}{}{}{}{}",
+               termion::cursor::Down(1),
+               termion::clear::CurrentLine,
+               termion::cursor::Left(<u16>::max_value()),
+               termion::color::Fg(termion::color::Red),
+               line,
+               termion::style::Reset,
+               termion::cursor::Up(1),
+               termion::cursor::Left(<u16>::max_value()),
+        ).unwrap();
+    } else {
+        write!(stdout, "{}{}{}Output: {}{}{}",
+               termion::cursor::Down(1),
+               termion::clear::CurrentLine,
+               termion::cursor::Left(<u16>::max_value()),
+               line,
+               termion::cursor::Up(1),
+               termion::cursor::Left(<u16>::max_value()),
+        ).unwrap();
+    }
 }
 
 fn write_prompt_line<W: Write>(stdout: &mut termion::raw::RawTerminal<W>, line: &str, cursor_pos: usize) {
@@ -165,13 +178,13 @@ fn write_prompt_line<W: Write>(stdout: &mut termion::raw::RawTerminal<W>, line: 
                termion::clear::CurrentLine,
                termion::cursor::Left(cursor_pos as u16 + 2),
                line,
-        );
+        ).unwrap();
     } else {
         write!(stdout, "{}{}> {}{}",
                termion::clear::CurrentLine,
                termion::cursor::Left(<u16>::max_value()),
                line,
                termion::cursor::Left((line.len() - cursor_pos) as u16),
-        );
+        ).unwrap();
     }
 }

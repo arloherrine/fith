@@ -1,5 +1,4 @@
 use itertools;
-use std::io::{Write, Read};
 
 pub struct Interpreter {
     data_stack: Vec<i32>,
@@ -34,8 +33,8 @@ impl Interpreter {
 
     fn execute_token(&mut self, token: &str) -> Result<String, String> {
         match token.parse::<i32>() {
-            Ok(intVal) => {
-                self.data_stack.push(intVal);
+            Ok(int_val) => {
+                self.data_stack.push(int_val);
                 Ok("".to_string())
             },
             Err(_) => {
@@ -45,7 +44,7 @@ impl Interpreter {
                     } else {
                         Err(format!("ERROR: Can't print, empty stack"))
                     },
-                    "drop" => if let Some(a) = self.data_stack.pop() {
+                    "drop" => if let Some(_) = self.data_stack.pop() {
                         Ok("".to_string())
                     } else {
                         Err(format!("ERROR: Can't drop, empty stack"))

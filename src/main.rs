@@ -4,11 +4,8 @@ extern crate termion;
 mod interpreter;
 mod interactive;
 
-use std::io;
-use std::io::prelude::*;
-
 fn main() {
-    let mut interp = interpreter::Interpreter::new();
+    let interp = interpreter::Interpreter::new();
      /* TODO if non- interactive
 
     let stdin = io::stdin();
