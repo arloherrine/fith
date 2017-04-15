@@ -130,14 +130,17 @@ fn run_line(mut interpreter: &Interpreter) -> Option<Interpreter> {
 
 fn write_stack_line<W: Write>(stdout: &mut termion::raw::RawTerminal<W>, line: &str) {
     // TODO color
-    write!(stdout, "{}{}{}Stack: {}{}{}",
+    write!(stdout, "{}{}{}Stack: {}{}{}{}{}",
         termion::cursor::Up(1),
         termion::clear::CurrentLine,
         termion::cursor::Left(<u16>::max_value()),
+        termion::color::Yellow,
         line,
+        termion::color::Yellow,
         termion::cursor::Down(1),
         termion::cursor::Left(<u16>::max_value()),
     );
+    stdout.flush().unwrap();
 }
 
 fn write_output_line<W: Write>(stdout: &mut termion::raw::RawTerminal<W>, result: Result<String, String>) {
