@@ -72,9 +72,9 @@ impl Interpreter {
                         Err(format!("ERROR: Can't rot, less than 3 elements on the stack"))
                     },
                     "+" => self.execute_binary_op("add", |a, b| a + b),
-                    "-" => self.execute_binary_op("subtract", |a, b| a - b),
+                    "-" => self.execute_binary_op("subtract", |a, b| b - a),
                     "*" => self.execute_binary_op("multiply", |a, b| a * b),
-                    "/" => self.execute_binary_op("divide", |a, b| a / b),
+                    "/" => self.execute_binary_op("divide", |a, b| b / a),
                     "mod" => self.execute_binary_op("mod", |a, b| a % b),
                     _ => {
                         Err(format!("ERROR: Unrecognized token: {}", token))
