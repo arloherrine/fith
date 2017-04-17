@@ -35,7 +35,7 @@ fn run_line(interpreter: &Interpreter) -> Option<Interpreter> {
     let mut stdout = stdout().into_raw_mode().unwrap();
 
     let mut current_line = Vec::new();
-    let mut cursor_pos = 0;
+    let mut cursor_pos :usize = 0;
     for c in stdin.keys() {
         match c.unwrap() {
             Key::Ctrl('c') => {
@@ -46,11 +46,45 @@ fn run_line(interpreter: &Interpreter) -> Option<Interpreter> {
                 write!(stdout, "{}{}", termion::cursor::Down(1), termion::cursor::Right(<u16>::max_value())).unwrap();
                 return None
             },
-            // TODO Key::Ctrl('a') => ,
-            // TODO Key::Ctrl('e') => ,
-            // TODO Key::Ctrl('u') => ,
-            // TODO Key::Ctrl('k') => ,
-            // TODO Key::Ctrl('w') => ,
+            Key::Ctrl('a') => {
+                if cursor_pos != 0 {
+                    write!(stdout, "{}",
+                           termion::cursor::Left(cursor_pos as u16),
+                    ).unwrap();
+                    cursor_pos = 0;
+                }
+            },
+            Key::Ctrl('e') => {
+                write!(stdout, "{}",
+                       termion::cursor::Right((current_line.len() - cursor_pos) as u16),
+                ).unwrap();
+                cursor_pos = current_line.len();
+            },
+            Key::Ctrl('u') => {
+                if cursor_pos != 0 {
+                    current_line.drain(0..cursor_pos);
+                    cursor_pos = 0;
+                    let line_str: String = current_line.iter().cloned().collect();
+                    let mut tmp_interpreter = interpreter.duplicate();
+                    let result = tmp_interpreter.execute_line(&line_str);
+                    write_stack_line(&mut stdout, &tmp_interpreter.stack_display());
+                    write_output_line(&mut stdout, result);
+                    write_prompt_line(&mut stdout, &line_str, cursor_pos);
+                }
+            },
+            Key::Ctrl('k') => {
+                if cursor_pos < current_line.len() {
+                    current_line.truncate(cursor_pos);
+                    cursor_pos = current_line.len();
+                    let line_str: String = current_line.iter().cloned().collect();
+                    let mut tmp_interpreter = interpreter.duplicate();
+                    let result = tmp_interpreter.execute_line(&line_str);
+                    write_stack_line(&mut stdout, &tmp_interpreter.stack_display());
+                    write_output_line(&mut stdout, result);
+                    write_prompt_line(&mut stdout, &line_str, cursor_pos);
+                }
+            },
+            //Key::Ctrl('w') => ,
             Key::Char('\n') => {
                 let line_str: String = current_line.iter().cloned().collect();
                 let mut tmp_interpreter = interpreter.duplicate();
@@ -93,8 +127,7 @@ fn run_line(interpreter: &Interpreter) -> Option<Interpreter> {
             Key::Left => {
                 if cursor_pos != 0 {
                     cursor_pos -= 1;
-                    let line_str: String = current_line.iter().cloned().collect();
-                    write_prompt_line(&mut stdout, &line_str, cursor_pos);
+                    write!(stdout, "{}", termion::cursor::Left(1)).unwrap();
                 }
             },
             Key::Right => {
@@ -102,8 +135,7 @@ fn run_line(interpreter: &Interpreter) -> Option<Interpreter> {
                 if cursor_pos > current_line.len() {
                     cursor_pos = current_line.len();
                 } else {
-                    let line_str: String = current_line.iter().cloned().collect();
-                    write_prompt_line(&mut stdout, &line_str, cursor_pos);
+                    write!(stdout, "{}", termion::cursor::Right(1)).unwrap();
                 }
             },
             // TODO history back Key::Up =>
@@ -124,12 +156,11 @@ fn run_line(interpreter: &Interpreter) -> Option<Interpreter> {
         }
         stdout.flush().unwrap();
     }
-    // I don't this should ever happen...
+    // I don't think should ever happen...
     None
 }
 
 fn write_stack_line<W: Write>(stdout: &mut termion::raw::RawTerminal<W>, line: &str) {
-    // TODO color
     write!(stdout, "{}{}{}Stack: {}{}{}{}{}",
         termion::cursor::Up(1),
         termion::clear::CurrentLine,
@@ -148,7 +179,6 @@ fn write_output_line<W: Write>(stdout: &mut termion::raw::RawTerminal<W>, result
         Ok(s) => (false, s),
         Err(e) => (true, e),
     };
-    // TODO color based on error
     if error {
         write!(stdout, "{}{}{}Output: {}{}{}{}{}",
                termion::cursor::Down(1),
@@ -161,11 +191,13 @@ fn write_output_line<W: Write>(stdout: &mut termion::raw::RawTerminal<W>, result
                termion::cursor::Left(<u16>::max_value()),
         ).unwrap();
     } else {
-        write!(stdout, "{}{}{}Output: {}{}{}",
+        write!(stdout, "{}{}{}Output: {}{}{}{}{}",
                termion::cursor::Down(1),
                termion::clear::CurrentLine,
                termion::cursor::Left(<u16>::max_value()),
+               termion::color::Fg(termion::color::Blue),
                line,
+               termion::style::Reset,
                termion::cursor::Up(1),
                termion::cursor::Left(<u16>::max_value()),
         ).unwrap();
